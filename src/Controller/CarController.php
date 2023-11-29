@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Repository\CarRepository;
 use App\Service\CarService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -10,11 +11,12 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class CarController extends AbstractController
 {
-    private $carService ;
+    private $carService;
 
     public function __construct(CarService $carService)
     {
-        $this->carService =  $carService;
+        // Inject the CarService into the controller through constructor
+        $this->carService = $carService;
     }
 
     /**
@@ -24,8 +26,18 @@ class CarController extends AbstractController
     {
         // Use the CarService to get the list of cars
         $cars = $this->carService->getListOfCars();
-
-        return new JsonResponse(['cars' => $cars]);
+        $carDetails = [];
+        foreach ($cars as $car) {
+            $details = $this->carService->getCarDetailsById($car->getId());
+            $carDetails[] = [
+                'id' => $car->getId(),
+                'brand' => $car->getBrand(),
+                'model' => $car->getModel(),
+                'details' => $details,
+            ];
+        }
+        // Return the list of cars as a JSON response
+        return new JsonResponse(['cars' => $carDetails]);
     }
 
     /**

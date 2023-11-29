@@ -25,32 +25,38 @@ class AuthentificationController extends AbstractController
      */
     public function apiLogin(Request $request, UserPasswordEncoderInterface $passwordEncoder, JWTTokenManagerInterface $jwtManager): JsonResponse
     {
+        // Decode the JSON content from the request
         $data = json_decode($request->getContent(), true);
 
+        // Extract email and password from the decoded data
         $email = $data['email'] ?? null;
         $password = $data['password'] ?? null;
 
+        // Check if email and password are provided
         if (!$email || !$password) {
             return new JsonResponse(['error' => 'Email and password are required.'], 400);
         }
 
+        // Find the user by email in the UserRepository
         $user = $this->userRepository->findOneBy(['email' => $email]);
 
+        // If the user is not found, throw a BadCredentialsException
         if (!$user) {
             throw new BadCredentialsException('Invalid email or password.');
         }
 
-        // Vérifiez si le mot de passe est correct
+        // Check if the provided password is valid for the user
         if (!$passwordEncoder->isPasswordValid($user, $password)) {
             throw new BadCredentialsException('Invalid email or password.');
         }
 
-        // Générez un token JWT
+        // Generate a JWT token for the authenticated user
         $token = $jwtManager->create($user);
 
-        // Retournez le token dans la réponse JSON
+        // Return the JWT token in the JSON response
         return new JsonResponse(['token' => $token]);
     }
+
     /**
      * @Route("/logout", name="app_logout")
      */

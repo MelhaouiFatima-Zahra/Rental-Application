@@ -18,18 +18,20 @@ class ReservationController extends AbstractController
 
     public function __construct(ReservationService $reservationService, CarRepository $carRepository)
     {
+        // Inject ReservationService and CarRepository into the controller through constructor
         $this->reservationService = $reservationService;
         $this->carRepository = $carRepository;
     }
+
     /**
      * @Route("/api/reservations", name="api_create_reservation", methods={"POST"})
      */
     public function createReservation(Request $request): JsonResponse
     {
-        // Extrait les données de la demande JSON
+        // Extract data from the JSON request
         $requestData = json_decode($request->getContent(), true);
 
-        // Vérifie si les clés attendues sont présentes dans la demande JSON
+        // Check if the expected keys are present in the JSON request
         if (
             !isset($requestData['user']) ||
             !isset($requestData['carId']) ||
@@ -39,38 +41,36 @@ class ReservationController extends AbstractController
             return new JsonResponse(['error' => 'Invalid request data. Please provide user, carId, startDate, and endDate.'], 400);
         }
 
-        // Récupère les données de la demande
+        // Retrieve data from the request
         $user = $requestData['user'];
         $carId = $requestData['carId'];
         $startDate = $requestData['startDate'];
         $endDate = $requestData['endDate'];
 
-        // Récupère la voiture à partir de l'entité CarRepository
+        // Retrieve the car from the CarRepository entity
         $car = $this->carRepository->find($carId);
 
-        // Vérifie si la voiture a été trouvée
+        // Check if the car is found
         if (!$car) {
             return new JsonResponse(['error' => 'Car not found with the provided ID.'], 404);
         }
 
-        // Appelle le service pour créer la réservation
+        // Call the service to create the reservation
         $message = $this->reservationService->createReservation($user, $carId, $startDate, $endDate);
 
-        // Retourne la réponse JSON
+        // Return the JSON response
         return new JsonResponse(['message' => $message]);
     }
 
-
-    // Dans ReservationController.php
     /**
      * @Route("/api/users/{id}/reservations", name="api_user_reservations", methods={"GET"})
      */
     public function getUserReservations($id)
     {
-        // Logique pour récupérer et retourner les réservations d'un utilisateur
+        // Logic to retrieve and return user reservations
         $userReservations = $this->reservationService->getUserReservations($id);
 
-        // Convertir les réservations en un format approprié (par exemple, tableau associatif)
+        // Convert reservations into an appropriate format (e.g., associative array)
         $formattedReservations = [];
 
         foreach ($userReservations as $reservation) {
@@ -84,7 +84,7 @@ class ReservationController extends AbstractController
                     'id' => $car->getId(),
                     'brand' => $car->getBrand(),
                     'model' => $car->getModel(),
-                    // Ajoutez d'autres propriétés de la voiture si nécessaire
+                    // Add other car properties if necessary
                 ],
             ];
         }
@@ -92,24 +92,23 @@ class ReservationController extends AbstractController
         return new JsonResponse(['reservations' => $formattedReservations]);
     }
 
-
     /**
      * @Route("/api/reservations/{id}", name="api_update_reservation", methods={"PUT"})
      */
-    public function updateReservation($id, Request $request, ReservationService $reservationService): JsonResponse
+    public function updateReservation(Request $request, $id): JsonResponse
     {
-        // Extrait les nouvelles données de la demande JSON
+        // Extract data from the JSON request
         $requestData = json_decode($request->getContent(), true);
 
-        // Vérifiez si les clés attendues sont présentes dans la demande JSON
+        // Check if the required keys are present
         if (!isset($requestData['startDate']) || !isset($requestData['endDate'])) {
             return new JsonResponse(['error' => 'Invalid request data. Please provide startDate and endDate.'], 400);
         }
 
-        // Appelle le service pour mettre à jour la réservation
-        $message = $reservationService->updateReservation($id, $requestData['startDate'], $requestData['endDate']);
+        // Call the service to update the reservation
+        $message = $this->reservationService->updateReservation($id, $requestData['newCarId'], $requestData['startDate'], $requestData['endDate']);
 
-        // Retourne la réponse JSON
+        // Return the JSON response
         return new JsonResponse(['message' => $message]);
     }
 
@@ -119,6 +118,7 @@ class ReservationController extends AbstractController
     public function cancelReservation($id, ReservationService $reservationService)
     {
         try {
+            // Call the service to cancel the reservation
             $message = $reservationService->cancelReservation($id);
 
             return new JsonResponse(['message' => $message]);
@@ -126,5 +126,4 @@ class ReservationController extends AbstractController
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }
     }
-
 }
