@@ -38,7 +38,7 @@ class Reservation
     private $user;
 
     /**
-     * @ORM\ManyToOne(targetEntity=car::class, inversedBy="reservations")
+     * @ORM\ManyToOne(targetEntity=Car::class, inversedBy="reservations")
      */
     private $car;
 

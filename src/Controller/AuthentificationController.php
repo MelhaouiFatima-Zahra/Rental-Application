@@ -2,30 +2,55 @@
 
 namespace App\Controller;
 
+use App\Repository\UserRepository; // Adjust this line to the correct namespace
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
+use Symfony\Component\Security\Core\Exception\BadCredentialsException;
+use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
 class AuthentificationController extends AbstractController
 {
-    /**
-     * @Route("/login", name="app_login")
-     */
-    public function login(AuthenticationUtils $authenticationUtils): Response
+    private $userRepository;
+
+    public function __construct(UserRepository $userRepository)
     {
-        // if ($this->getUser()) {
-        //     return $this->redirectToRoute('target_path');
-        // }
-
-        // get the login error if there is one
-        $error = $authenticationUtils->getLastAuthenticationError();
-        // last username entered by the user
-        $lastUsername = $authenticationUtils->getLastUsername();
-
-        return $this->render('security/login.html.twig', ['last_username' => $lastUsername, 'error' => $error]);
+        $this->userRepository = $userRepository;
     }
 
+    /**
+     * @Route("/login", name="app_login", methods={"POST"})
+     */
+    public function apiLogin(Request $request, UserPasswordEncoderInterface $passwordEncoder, JWTTokenManagerInterface $jwtManager): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        $email = $data['email'] ?? null;
+        $password = $data['password'] ?? null;
+
+        if (!$email || !$password) {
+            return new JsonResponse(['error' => 'Email and password are required.'], 400);
+        }
+
+        $user = $this->userRepository->findOneBy(['email' => $email]);
+
+        if (!$user) {
+            throw new BadCredentialsException('Invalid email or password.');
+        }
+
+        // Vérifiez si le mot de passe est correct
+        if (!$passwordEncoder->isPasswordValid($user, $password)) {
+            throw new BadCredentialsException('Invalid email or password.');
+        }
+
+        // Générez un token JWT
+        $token = $jwtManager->create($user);
+
+        // Retournez le token dans la réponse JSON
+        return new JsonResponse(['token' => $token]);
+    }
     /**
      * @Route("/logout", name="app_logout")
      */
