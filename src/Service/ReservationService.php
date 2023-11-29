@@ -30,13 +30,13 @@ class ReservationService
 
     public function createReservation($userId, $carId, $startDate, $endDate)
     {
-        // Check if the car exists.
+        // Vérifiez si la voiture existe
         $car = $this->carRepository->find($carId);
         if (!$car) {
             throw new \Exception('Car not found with the provided ID.');
         }
 
-        // Check the availability of the car during the reservation period.
+        // Vérifiez la disponibilité de la voiture pendant la période de réservation
         if (!$this->isCarAvailable($car, $startDate, $endDate)) {
             throw new \Exception('The car is not available for reservation during the specified period.');
         }
@@ -46,10 +46,10 @@ class ReservationService
             throw new \Exception('User not found with the provided ID.');
         }
 
-
+        // Effectuez des vérifications supplémentaires si nécessaire, par exemple, l'autorisation de l'utilisateur, etc.
         $startDateObj = new \DateTime($startDate);
         $endDateObj = new \DateTime($endDate);
-        // Ensure that the end date is later than the start date
+
         if ($endDateObj <= $startDateObj) {
             throw new \Exception('Invalid reservation dates. The end date must be after the start date.');
         }
@@ -67,7 +67,7 @@ class ReservationService
         return 'Reservation created successfully';
     }
 
-    //The method to check the availability of the car during the reservation period.
+// Méthode pour vérifier la disponibilité de la voiture pendant la période de réservation
     private function isCarAvailable(Car $car, $startDate, $endDate)
     {
         $existingReservations = $car->getReservations();
@@ -100,6 +100,9 @@ class ReservationService
             throw new \Exception('Reservation not found with the provided ID.');
         }
 
+        // Perform any additional validation or business logic if needed
+        // ...
+
         // Fetch the new car from the repository
         $newCar = $this->carRepository->find($newCarId);
 
@@ -127,7 +130,12 @@ class ReservationService
         return 'Reservation updated successfully';
     }
 
+    public function getUserReservations($userId)
+    {
+        $userReservations = $this->reservationRepository->findBy(['user' => $userId]);
 
+        return $userReservations;
+    }
 
     public function cancelReservation($id)
     {
@@ -145,6 +153,7 @@ class ReservationService
                 throw new \Exception('Reservation is already canceled.');
             }
 
+
             // Update the reservation status to canceled
             $reservation->setIsCanceled(true);
 
@@ -153,7 +162,7 @@ class ReservationService
 
             return 'Reservation canceled successfully';
         } catch (\Exception $e) {
-            throw $e;
+            throw $e; // You may handle the exception differently based on your requirements
         }
     }
 }
