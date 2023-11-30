@@ -28,12 +28,19 @@ class CarController extends AbstractController
         $cars = $this->carService->getListOfCars();
         $carDetails = [];
         foreach ($cars as $car) {
-            $details = $this->carService->getCarDetailsById($car->getId());
+
             $carDetails[] = [
                 'id' => $car->getId(),
                 'brand' => $car->getBrand(),
                 'model' => $car->getModel(),
-                'details' => $details,
+                'fuelType' => $car->getFuelType(),
+                'color' => $car->getColor(),
+                'dailyRentalPrice' => $car->getDailyRentalPrice(),
+                'mileage' => $car->getMileage(),
+                'numberOfSeats' => $car->getNumberOfSeats(),
+                'transmission' => $car->getTransmission(),
+                'image' => $car->getImage(),
+                'yearOfManufacture' => $car->getYearOfManufacture(),
             ];
         }
         // Return the list of cars as a JSON response

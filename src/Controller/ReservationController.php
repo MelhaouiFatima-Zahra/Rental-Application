@@ -10,17 +10,22 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Security\Core\Security;
 
 class ReservationController extends AbstractController
 {
     private $reservationService;
     private $carRepository;
+    private $security;
 
-    public function __construct(ReservationService $reservationService, CarRepository $carRepository)
-    {
-        // Inject ReservationService and CarRepository into the controller through constructor
-        $this->reservationService = $reservationService;
+    public function __construct(
+        CarRepository $carRepository,
+        ReservationService $reservationService,
+        Security $security
+    ) {
         $this->carRepository = $carRepository;
+        $this->reservationService = $reservationService;
+        $this->security = $security;
     }
 
     /**
@@ -33,16 +38,14 @@ class ReservationController extends AbstractController
 
         // Check if the expected keys are present in the JSON request
         if (
-            !isset($requestData['user']) ||
             !isset($requestData['carId']) ||
             !isset($requestData['startDate']) ||
             !isset($requestData['endDate'])
         ) {
-            return new JsonResponse(['error' => 'Invalid request data. Please provide user, carId, startDate, and endDate.'], 400);
+            return new JsonResponse(['error' => 'Invalid request data. Please provide carId, startDate, and endDate.'], 400);
         }
 
         // Retrieve data from the request
-        $user = $requestData['user'];
         $carId = $requestData['carId'];
         $startDate = $requestData['startDate'];
         $endDate = $requestData['endDate'];
@@ -54,6 +57,9 @@ class ReservationController extends AbstractController
         if (!$car) {
             return new JsonResponse(['error' => 'Car not found with the provided ID.'], 404);
         }
+
+        // Get the currently authenticated user
+        $user = $this->security->getUser();
 
         // Call the service to create the reservation
         $message = $this->reservationService->createReservation($user, $carId, $startDate, $endDate);
@@ -67,7 +73,6 @@ class ReservationController extends AbstractController
      */
     public function getUserReservations($id)
     {
-        // Logic to retrieve and return user reservations
         $userReservations = $this->reservationService->getUserReservations($id);
 
         // Convert reservations into an appropriate format (e.g., associative array)

@@ -30,45 +30,50 @@ class ReservationService
 
     public function createReservation($userId, $carId, $startDate, $endDate)
     {
-        // Vérifiez si la voiture existe
-        $car = $this->carRepository->find($carId);
-        if (!$car) {
-            throw new \Exception('Car not found with the provided ID.');
-        }
+       // try {
+            // Check if the car exists.
+            $car = $this->carRepository->find($carId);
+            if (!$car) {
+                throw new \Exception('Car not found with the provided ID.');
+            }
 
-        // Vérifiez la disponibilité de la voiture pendant la période de réservation
-        if (!$this->isCarAvailable($car, $startDate, $endDate)) {
-            throw new \Exception('The car is not available for reservation during the specified period.');
-        }
+            // Check the car's availability during the reservation period.
+            if (!$this->isCarAvailable($car, $startDate, $endDate)) {
+                throw new \Exception('The car is not available for reservation during the specified period.');
+            }
 
-        $user = $this->userRepository->find($userId);
-        if (!$user) {
-            throw new \Exception('User not found with the provided ID.');
-        }
+            $user = $this->userRepository->find($userId);
+            if (!$user) {
+                throw new \Exception('User not found with the provided ID.');
+            }
 
-        // Effectuez des vérifications supplémentaires si nécessaire, par exemple, l'autorisation de l'utilisateur, etc.
-        $startDateObj = new \DateTime($startDate);
-        $endDateObj = new \DateTime($endDate);
+            $startDateObj = new \DateTime($startDate);
+            $endDateObj = new \DateTime($endDate);
 
-        if ($endDateObj <= $startDateObj) {
-            throw new \Exception('Invalid reservation dates. The end date must be after the start date.');
-        }
+            if ($endDateObj <= $startDateObj) {
+                throw new \Exception('Invalid reservation dates. The end date must be after the start date.');
+            }
 
-        $reservation = new Reservation();
-        $reservation->setUser($user);
-        $reservation->setCar($car);
-        $reservation->setStartDate($startDateObj);
-        $reservation->setEndDate($endDateObj);
-        $reservation->setIsCanceled(false);
+            $reservation = new Reservation();
+            $reservation->setUser($user);
+            $reservation->setCar($car);
+            $reservation->setStartDate($startDateObj);
+            $reservation->setEndDate($endDateObj);
+            $reservation->setIsCanceled(false);
 
-        $this->entityManager->persist($reservation);
-        $this->entityManager->flush();
+            $this->entityManager->persist($reservation);
+            $this->entityManager->flush();
 
-        return 'Reservation created successfully';
+            return 'Reservation created successfully';
+//        } catch (\Exception $e) {
+//            // Catch the exception and return the error message.
+//            return $e->getMessage();
+//        }
     }
 
-// Méthode pour vérifier la disponibilité de la voiture pendant la période de réservation
-    private function isCarAvailable(Car $car, $startDate, $endDate)
+
+    // Method to check the availability of the car during the reservation period
+    public function isCarAvailable(Car $car, $startDate, $endDate)
     {
         $existingReservations = $car->getReservations();
 
@@ -92,6 +97,7 @@ class ReservationService
 
     public function updateReservation($reservationId, $newCarId, $newStartDate, $newEndDate)
     {
+//        try {
         // Fetch the reservation from the repository
         $reservation = $this->reservationRepository->find($reservationId);
 
@@ -99,9 +105,6 @@ class ReservationService
         if (!$reservation) {
             throw new \Exception('Reservation not found with the provided ID.');
         }
-
-        // Perform any additional validation or business logic if needed
-        // ...
 
         // Fetch the new car from the repository
         $newCar = $this->carRepository->find($newCarId);
@@ -119,7 +122,9 @@ class ReservationService
         // Update the reservation with the new car, start date, and end date
         $newStartDateObj = new \DateTime($newStartDate);
         $newEndDateObj = new \DateTime($newEndDate);
-
+        if ($newEndDateObj <= $newStartDateObj) {
+            throw new \Exception('Invalid reservation dates. The end date must be after the start date.');
+        }
         $reservation->setCar($newCar);
         $reservation->setStartDate($newStartDateObj);
         $reservation->setEndDate($newEndDateObj);
@@ -128,14 +133,25 @@ class ReservationService
         $this->entityManager->flush();
 
         return 'Reservation updated successfully';
+//        } catch (\Exception $e) {
+//            // Catch the exception and return the error message.
+//            return $e->getMessage();
+//        }
     }
 
     public function getUserReservations($userId)
     {
+        // Fetch all reservations for the user
         $userReservations = $this->reservationRepository->findBy(['user' => $userId]);
 
-        return $userReservations;
+        // Filter out reservations that are canceled
+        $activeReservations = array_filter($userReservations, function ($reservation) {
+            return !$reservation->isIsCanceled();
+        });
+
+        return $activeReservations;
     }
+
 
     public function cancelReservation($id)
     {
